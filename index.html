@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>myco Live Podcast Player</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4CD964',
+                        secondary: '#1A1E2E'
+                    },
+                    borderRadius: {
+                        none: '0px',
+                        sm: '4px',
+                        DEFAULT: '8px',
+                        md: '12px',
+                        lg: '16px',
+                        xl: '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        full: '9999px',
+                        button: '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        :where([class^="ri-"])::before {
+            content: "\f3c2";
+        }
+
+        body {
+            background-color: #1A1E2E;
+            color: white;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Quiz Notification Animation */
+        .quiz-notification {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .timer-bar {
+            transition: width 1s linear;
+        }
+
+        .quiz-option {
+            transition: all 0.3s ease;
+        }
+
+        .quiz-option:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .quiz-option.selected {
+            background-color: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .quiz-option.correct {
+            background-color: rgba(76, 217, 100, 0.2);
+            border-color: #4CD964;
+        }
+
+        .quiz-option.incorrect {
+            background-color: rgba(255, 59, 48, 0.2);
+            border-color: #FF3B30;
+        }
+
+        .quiz-widget {
+            transition: all 0.3s ease;
+        }
+
+        .quiz-widget.collapsed {
+            width: 60px;
+            height: 60px;
+            overflow: hidden;
+        }
+
+        .quiz-widget.expanded {
+            width: 320px;
+            height: auto;
+            max-height: 80%;
+        }
+
+        /* Video Player Progress Bar */
+        #progressBarContainer {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+
+        #progressBar {
+            transition: width 1s linear;
+            height: 100%;
+            background-color: #4CD964;
+            width: 0;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #4CD964;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .myco-logo-1 {
+            width: 5rem;
+            margin-top: 10px;
+        }
+
+        .myco-logo {
+            width: 6rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-secondary py-2 px-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <button class="w-10 h-10 flex items-center justify-center text-white mr-4">
+                    <i class="ri-menu-line ri-lg"></i>
+                </button>
+                <div class="myco-logo-1">
+                    <img src="./images/logo-white.png" alt="Myco" />
+                </div>
+                <div class="flex-1 max-w-md mx-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search"
+                            class="w-full bg-[#2A2E3E] text-white px-4 py-2 rounded-md border-none focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <button
+                            class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center">
+                            <i class="ri-search-line ri-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="bg-primary text-white px-4 py-2 rounded-button flex items-center whitespace-nowrap">
+                    <i class="ri-user-line mr-2"></i>
+                    Sign In
+                </button>
+            </div>
+        </header>
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <!-- Video Player Container -->
+            <div class="relative w-full max-w-6xl mx-auto mt-4 bg-black rounded-md overflow-hidden">
+                <!-- Video Title Bar -->
+                <div class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/70 to-transparent z-10">
+                    <h1 class="text-xl font-medium">Dove Real Beauty Starts with Motherhood | Zara Madani</h1>
+                </div>
+                <!-- Video Content -->
+                <div class="relative w-full" style="padding-top: 56.25%;">
+                    <video id="myVideo" autoplay muted loop playsinline
+                        class="absolute top-0 left-0 w-full h-full object-cover"
+                        style="width: 100%; height: auto; border: none; outline: none; pointer-events: none;">
+                        <source src="./images/MYCo FINALE_PROMO_TIKTOK.mp4" type="video/mp4" />
+                    </video>
+                    <!-- myco Logo Overlay -->
+                    <div class="absolute top-4 right-4">
+                        <div class="myco-logo">
+                            <img src="./images/logo-white.png" alt="Myco" />
+                        </div>
+                    </div>
+                    <!-- Quiz Widget (Expanded State) -->
+                    <div
+                        class="quiz-widget expanded absolute right-4 top-1/2 transform -translate-y-1/2 bg-secondary/90 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden z-20">
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 flex items-center justify-center bg-primary rounded-full mr-2">
+                                        <i class="ri-question-line ri-lg"></i>
+                                    </div>
+                                    <span class="font-medium">Quiz Time!</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span id="question-number"
+                                        class="text-sm bg-primary/20 text-primary px-2 py-1 rounded-full">1/3</span>
+                                    <button class="w-8 h-8 flex items-center justify-center ml-2" onclick="closeQuiz()">
+                                        <i class="ri-close-line ri-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <h3 id="question-text" class="text-lg font-medium mb-2">
+                                    What is the primary ingredient in traditional hummus?
+                                </h3>
+                                <div id="options-container" class="space-y-3 mb-4">
+                                    <!-- Options generated dynamically -->
+                                </div>
+                                <div class="relative h-2 bg-white/20 rounded-full overflow-hidden">
+                                    <div id="timer-bar" class="timer-bar absolute left-0 top-0 h-full bg-primary"
+                                        style="width: 100%; transition: width 1s linear;"></div>
+                                </div>
+                                <div class="flex justify-between text-xs mt-1">
+                                    <span id="timer-text">10 seconds left</span>
+                                    <span id="score">Score: 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Quiz Notification (Minimized State) -->
+                    <div id="quiz-notification"
+                        class="hidden quiz-notification absolute right-4 bottom-20 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg cursor-pointer">
+                        <i class="ri-question-line ri-lg"></i>
+                        <div id="notification-timer"
+                            class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold">
+                            10s</div>
+                    </div>
+                    <!-- Video Controls -->
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <div id="progressBarContainer" class="progress-bar rounded-full mb-2">
+                            <div id="progressBar"></div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <!-- Since video is autoplaying, we now show a pause icon -->
+                                <button class="play-button w-10 h-10 flex items-center justify-center rounded-full">
+                                    <i class="ri-pause-fill ri-lg"></i>
+                                </button>
+                                <button class="mute-button w-10 h-10 flex items-center justify-center">
+                                    <i class="ri-volume-up-line ri-lg"></i>
+                                </button>
+                                <span id="timeDisplay" class="text-sm mx-2"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <button class="settings-button w-10 h-10 flex items-center justify-center">
+                                    <i class="ri-settings-3-line ri-lg"></i>
+                                </button>
+                                <button class="cast-button w-10 h-10 flex items-center justify-center">
+                                    <i class="ri-cast-line ri-lg"></i>
+                                </button>
+                                <button class="fullscreen-button w-10 h-10 flex items-center justify-center">
+                                    <i class="ri-fullscreen-line ri-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Video Controls -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Video Player Progress Script -->
+    <script>
+        // Video Progress & Time Display
+        const video = document.getElementById("myVideo");
+        const progressBar = document.getElementById("progressBar");
+        const timeDisplay = document.getElementById("timeDisplay");
+
+        function formatTime(time) {
+            const minutes = Math.floor(time / 60).toString().padStart(2, "0");
+            const seconds = Math.floor(time % 60).toString().padStart(2, "0");
+            return `${minutes}:${seconds}`;
+        }
+
+        video.addEventListener("loadedmetadata", () => {
+            const duration = video.duration;
+            timeDisplay.textContent = `00:00 / ${formatTime(duration)}`;
+            setInterval(() => {
+                const currentTime = video.currentTime;
+                const progressPercent = (currentTime / duration) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+                timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+            }, 1000);
+        });
+    </script>
+
+    <!-- Quiz Widget Script -->
+    <script>
+        // Array of quiz questions
+        let questions = [
+            {
+                question: "What is the primary ingredient in traditional hummus?",
+                options: ["Black beans", "Chickpeas", "Lentils", "Soybeans"],
+                correctAnswer: 1
+            },
+            {
+                question: "What is the capital of France?",
+                options: ["London", "Paris", "Rome", "Berlin"],
+                correctAnswer: 1
+            },
+            {
+                question: "Which element has the chemical symbol 'O'?",
+                options: ["Oxygen", "Osmium", "Ozone", "Olivine"],
+                correctAnswer: 0
+            }
+            // You can add more questions as needed.
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timerInterval;
+        let timeLeft = 10; // 10-second timer for each question
+
+        // DOM references for quiz widget
+        const questionText = document.getElementById("question-text");
+        const optionsContainer = document.getElementById("options-container");
+        const timerBarQuiz = document.getElementById("timer-bar");
+        const timerText = document.getElementById("timer-text");
+        const scoreText = document.getElementById("score");
+        const questionNumberBadge = document.getElementById("question-number");
+        const notificationTimer = document.getElementById("notification-timer");
+
+        // Render question and options
+        function renderQuestion(index) {
+            const currentQ = questions[index];
+            questionText.textContent = currentQ.question;
+            optionsContainer.innerHTML = "";
+            currentQ.options.forEach((option, i) => {
+                const btn = document.createElement("button");
+                btn.className = "quiz-option w-full text-left p-3 border border-white/20 rounded-md flex items-center";
+                btn.innerHTML = `
+          <span class="w-6 h-6 flex items-center justify-center bg-white/10 rounded-full mr-3">
+            ${String.fromCharCode(65 + i)}
+          </span>
+          <span>${option}</span>
+        `;
+                btn.onclick = () => selectOption(i);
+                optionsContainer.appendChild(btn);
+            });
+            // Update question counter badge (e.g., "1/3")
+            questionNumberBadge.textContent = `${index + 1}/${questions.length}`;
+        }
+
+        // Update quiz timer display and progress bar
+        function updateQuizTimer() {
+            const percent = (timeLeft / 10) * 100;
+            timerBarQuiz.style.width = `${percent}%`;
+            timerText.textContent = `${timeLeft} seconds left`;
+            if (notificationTimer) {
+                notificationTimer.textContent = `${timeLeft}s`;
+            }
+        }
+
+        // Start or reset the quiz timer for a question
+        function startQuizTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 10;
+            updateQuizTimer();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateQuizTimer();
+                // Auto-reveal correct answer at last 3 seconds if no option selected
+                if (timeLeft === 3) {
+                    autoRevealAnswer();
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    // Fade out progress bar smoothly before loading next question
+                    timerBarQuiz.style.transition = "width 0.5s ease-out";
+                    timerBarQuiz.style.width = "0%";
+                    setTimeout(nextQuestion, 500);
+                }
+            }, 1000);
+        }
+
+        // Auto-reveal correct answer if nothing is selected by 3 seconds
+        function autoRevealAnswer() {
+            const options = document.querySelectorAll(".quiz-option");
+            let anySelected = false;
+            options.forEach(option => {
+                if (option.classList.contains("selected")) {
+                    anySelected = true;
+                }
+            });
+            if (!anySelected) {
+                options[questions[currentQuestionIndex].correctAnswer].classList.add("selected");
+            }
+        }
+
+        // When user selects an option
+        function selectOption(selectedIndex) {
+            clearInterval(timerInterval);
+            const currentQ = questions[currentQuestionIndex];
+            const options = document.querySelectorAll(".quiz-option");
+            // Mark the selected option as green
+            options.forEach((option, index) => {
+                if (index === selectedIndex) {
+                    option.classList.add("selected");
+                } else {
+                    option.classList.remove("selected");
+                }
+            });
+            // Wait 3 seconds to display selected state, then load next question
+            setTimeout(nextQuestion, 3000);
+        }
+
+        function nextQuestion() {
+            timerBarQuiz.style.transition = "none";
+            currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+            renderQuestion(currentQuestionIndex);
+            startQuizTimer();
+        }
+
+        function closeQuiz() {
+            document.querySelector(".quiz-widget").style.display = "none";
+        }
+
+        // Initialize the quiz widget
+        renderQuestion(currentQuestionIndex);
+        startQuizTimer();
+    </script>
+</body>
+
+</html>
